@@ -3,12 +3,12 @@ __pycache__/
 *.py[cod]
 
 # Config file
-config.yaml
+# config.yaml
 
 # Output files
-resources/output
-resources/input
-resources/images
+# resources/output
+# resources/input
+# resources/images
 
 # Temporary files
 temp_overlay.pdf

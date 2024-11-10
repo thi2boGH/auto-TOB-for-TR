@@ -5,6 +5,35 @@ from reportlab.lib import colors
 from datetime import datetime
 import os
 import logging
+from PIL import Image
+
+
+def get_signature_dimensions(signature_path, max_width, max_height):
+    """
+    Calculates the dimensions to which the signature image should be resized,
+    preserving aspect ratio, to fit within the given maximum width and height.
+    """
+    try:
+        with Image.open(signature_path) as img:
+            img_width, img_height = img.size
+
+            # Calculate scaling factor to fit within max dimensions, preserving aspect ratio
+            width_ratio = max_width / img_width
+            height_ratio = max_height / img_height
+            scaling_factor = min(width_ratio, height_ratio, 1)  # Do not scale up
+
+            # Calculate new dimensions
+            new_width = img_width * scaling_factor
+            new_height = img_height * scaling_factor
+
+            return new_width, new_height
+    except FileNotFoundError:
+        logging.error(f"Signature image file not found at '{signature_path}'.")
+        raise
+    except Exception as e:
+        logging.error(f"Error processing signature image: {e}")
+        raise
+
 
 
 def add_text_to_pdf(input_pdf, output_pdf, signature_path, personal_info, result):
@@ -18,8 +47,8 @@ def add_text_to_pdf(input_pdf, output_pdf, signature_path, personal_info, result
 
         # Page 1
         c.setFont("Helvetica", 8.5)
-        c.drawString(275, height - 67, result["dates"][0].strftime("%m  %y"))  # Month 1
-        c.drawString(385, height - 67, result["dates"][1].strftime("%m  %y"))  # Month 2
+        c.drawString(275, height - 67, result["dates"][0].strftime("%m  %y")) 
+        c.drawString(385, height - 67, result["dates"][1].strftime("%m  %y")) 
 
         c.setFont("Helvetica", 9.5)
         c.setStrokeColor(colors.red)
@@ -27,34 +56,49 @@ def add_text_to_pdf(input_pdf, output_pdf, signature_path, personal_info, result
         c.line(310, height - 90, 430, height - 90)
         c.line(310, height - 102, 425, height - 102)
 
-        c.drawString(302, height - 137, personal_info['national_id_number'])  # National number
-        c.drawString(302, height - 149, f"{personal_info['first_name']} {personal_info['last_name']}")  # Name
-        c.drawString(302, height - 171, personal_info['address_line_1'])  # Address 1
-        c.drawString(302, height - 183, personal_info['address_line_2'])  # Address 2
+        c.drawString(302, height - 137, personal_info['national_id_number']) 
+        c.drawString(302, height - 149, f"{personal_info['first_name']} {personal_info['last_name']}") 
+        c.drawString(302, height - 171, personal_info['address_line_1']) 
+        c.drawString(302, height - 183, personal_info['address_line_2'])  
 
         c.setFont("Helvetica", 11)
-        c.drawString(235, height - 255, str(result['etfs']['total_transactions']))  # ETF Transactions
-        c.drawString(355, height - 267, f"{result['etfs']['total_value']:.2f}")  # ETF Value
-        c.drawString(490, height - 267, f"{result['etfs']['total_tax']:.2f}")  # ETF Tax
+        c.drawString(235, height - 255, str(result['etfs']['total_transactions'])) 
+        c.drawString(355, height - 267, f"{result['etfs']['total_value']:.2f}")  
+        c.drawString(490, height - 267, f"{result['etfs']['total_tax']:.2f}")  
 
-        c.drawString(235, height - 330, str(result['stocks']['total_transactions']))  # Stock Transactions
-        c.drawString(355, height - 330, f"{result['stocks']['total_value']:.2f}")  # Stock Value
-        c.drawString(490, height - 330, f"{result['stocks']['total_tax']:.2f}")  # Stock Tax
+        c.drawString(235, height - 330, str(result['stocks']['total_transactions']))  
+        c.drawString(355, height - 330, f"{result['stocks']['total_value']:.2f}")  
+        c.drawString(490, height - 330, f"{result['stocks']['total_tax']:.2f}")  
 
         total_tax = result['etfs']['total_tax'] + result['stocks']['total_tax']
-        c.drawString(490, height - 460, f"{total_tax:.2f}")  # Total Tax
+        c.drawString(490, height - 460, f"{total_tax:.2f}")  
 
         # Page 2
         c.showPage()
         c.setFont("Helvetica", 11)
         c.drawString(418, height - 418, f"{total_tax:.2f}")
 
-        c.drawString(122, height - 538, "Brussels")
+        c.drawString(122, height - 538, personal_info["city_for_signature"])
         c.drawString(192, height - 538, datetime.now().strftime("%d/%m/%Y"))
 
-        # Signature
-        signature_x, signature_y = 340, height - 550
-        c.drawImage(signature_path, signature_x, signature_y, width=121, height=55)
+        signature_area_x = 335
+        signature_area_y = height - 555
+        signature_area_width = 151
+        signature_area_height = 62
+
+        # Get the new dimensions for the signature image
+        new_width, new_height = get_signature_dimensions(
+            signature_path,
+            max_width=signature_area_width,
+            max_height=signature_area_height
+        )
+
+        # Adjust x and y coordinates to center the signature within the area
+        signature_x = signature_area_x + (signature_area_width - new_width) / 2
+        signature_y = signature_area_y + (signature_area_height - new_height) / 2
+
+        # Draw the image onto the PDF canvas
+        c.drawImage(signature_path, signature_x, signature_y, width=new_width, height=new_height)
 
         c.save()
 
