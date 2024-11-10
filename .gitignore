@@ -1,0 +1,17 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Config file
+config.yaml
+
+# Output files
+resources/
+
+# Temporary files
+temp_overlay.pdf
+
+# Virtual environment
+venv/
+
+.DS_Store
