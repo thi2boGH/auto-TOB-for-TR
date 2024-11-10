@@ -6,12 +6,14 @@ __pycache__/
 config.yaml
 
 # Output files
-resources/
+resources/output
+resources/input
+resources/images
 
 # Temporary files
 temp_overlay.pdf
 
 # Virtual environment
-venv/
+.venv/
 
 .DS_Store
